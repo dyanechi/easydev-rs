@@ -3,16 +3,16 @@ name = "easydev"
 version = "0.1.0"
 edition = "2021"
 authors = ["Dawid Janeczko"]
-keywords = [""]
-categories = [""]
-description = ""
+keywords = ["rust, tools, dev, macros, common, easydev, comfort, easy, development"]
+categories = ["tools, dev, macros, common"]
+description = "Rust Common Development Tools that ensure productive and efficient programming without boilerplate code. "
 license = "MIT"
 readme = "README.md"
 homepage = ""
 repository = "https://github.com/dyanechi/easydev-rs"
 
 [dependencies]
-builder = { version = "0.1.0", path = "crates/builder", optional = true }
+builder = { path = "crates/builder", optional = true }
 
 
 [features]

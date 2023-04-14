@@ -2,7 +2,7 @@
 
 ## Usage
 
-Add this to your project dependencies
+Add this to your project dependencies, then opt in features that you need in project:
 
 ```toml
 [dependencies]
