@@ -1,5 +1,6 @@
 #![feature(decl_macro)]
 use quote::*;
+use paste::*;
 use proc_macro::TokenStream;
 use syn::{parse_macro_input, DeriveInput, Type, parse_quote};
 
