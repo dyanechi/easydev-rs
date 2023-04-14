@@ -11,9 +11,6 @@ readme = "README.md"
 homepage = ""
 repository = "https://github.com/dyanechi/easydev-rs"
 
-[workspace]
-members = ["crates/*"]
-
 [dependencies]
 builder = { version = "0.1.0", path = "crates/builder", optional = true }
 

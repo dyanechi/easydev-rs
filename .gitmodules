@@ -1,0 +1,3 @@
+[submodule "easydev/builder"]
+    path = "easydev/builder"
+    url = ./crates/builder
