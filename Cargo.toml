@@ -2,21 +2,14 @@
 name = "easydev"
 version = "0.1.0"
 edition = "2021"
-
-[workspace]
-members = [
-    "crates/builder"
-]
-
-[workspace.package]
-name = "easydev"
-version = "0.1.0"
-edition = "2021"
-
-[features]
-builder = []
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+authors = ["Dawid Janeczko"]
+license = "MIT"
+homepage = ""
+repository = "https://github.com/dyanechi/easydev-rs"
 
 [dependencies]
-builder = { path = "crates/builder" }
+builder = { version = "0.1.0", path = "crates/builder", optional = true }
+
+
+[features]
+builder = ["dep:builder"]

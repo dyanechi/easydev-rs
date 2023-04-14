@@ -1,3 +1,5 @@
 
 #[cfg(feature = "builder")]
-pub use builder;
+pub mod builder {
+    pub use builder::*;
+}
