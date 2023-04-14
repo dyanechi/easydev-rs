@@ -9,16 +9,3 @@ mod with_builder;
 pub fn struct_with_builder(item: TokenStream) -> TokenStream {
     with_builder::with_builder(item)
 }
-
-
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
