@@ -11,7 +11,8 @@ easydev = { git = "https://github.com/dyanechi/easydev-rs", features = [""] }
 
 ## Features
 
-|     | Features |
-| --- | -------- |
-| ✅  | builder  |
-| ✅  | macros   |
+
+|    | Features                                                                   |
+| ---- | ---------------------------------------------------------------------------- |
+| ✅ | [builder](https://github.com/dyanechi/easydev-rs/tree/main/crates/builder) |
+| ✅ | [macros](https://github.com/dyanechi/easydev-rs/tree/main/crates/macros)   |

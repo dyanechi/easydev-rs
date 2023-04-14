@@ -14,6 +14,5 @@ repository = "https://github.com/dyanechi/easydev-rs"
 [dependencies]
 builder = { path = "crates/builder", optional = true }
 
-
 [features]
 builder = ["dep:builder"]
