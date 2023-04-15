@@ -1,7 +1,7 @@
 
 
 // #[cfg(feature = "builder")]
-mod builder {
+pub mod builder {
     // extern crate builder;
     pub use ::builder::*;
     pub use paste::paste;
