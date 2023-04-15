@@ -32,7 +32,8 @@ pub fn with_builder(item: TokenStream) -> TokenStream {
     }
 
     let stream = quote! {
-        paste::paste! {
+        use paste::*;
+        paste! {
             impl #name {
                 pub fn new() -> [<#name Builder>] {
                     [<#name Builder>]::new()
@@ -109,3 +110,4 @@ pub fn with_builder(item: TokenStream) -> TokenStream {
 //         }
 //     }
 // }
+
