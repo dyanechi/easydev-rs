@@ -47,6 +47,8 @@ pub mod builder {
         #[derive(WithBuilder, Debug, Default)]
         struct Tester {
             name: Option<String>,
+            opt_name: Option<Option<String>>,
+            tuple: (String, usize),
             age: usize,
             ancestor: Option<Box<Tester>>,
             some: Option<TestOpt>
@@ -58,6 +60,8 @@ pub mod builder {
             let age = 72;
             let t = Tester::new()
                 .with_name(name.to_string())
+                .with_opt_name(None)
+                .with_tuple((String::new(), 3))
                 .with_age(age)
                 .with_ancestor(Box::new(Tester::default()))
                 .with_some(TestOpt::new().with_id(721).build())

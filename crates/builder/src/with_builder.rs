@@ -1,5 +1,4 @@
 use proc_macro2::Ident;
-use quote::__private::ext::RepToTokensExt;
 use syn::spanned::Spanned;
 
 use super::*;
@@ -13,45 +12,32 @@ pub fn with_builder(item: TokenStream) -> TokenStream {
 
     let fields = match ast.data {
         syn::Data::Struct(st) => st.fields,
-        syn::Data::Enum(_) => panic!("Builder doesn't support enums"),
-        syn::Data::Union(_) => panic!("Builder doesn't support unions"),
+        _ => panic!("WithBuilder supports only structs")
     };
 
-    let fields_iter = fields.iter();
-    let fields_len = fields_iter.len();
-    let mut fields_idents = Vec::with_capacity(fields_len);
+    let mut field_idents = Vec::with_capacity(fields.len());
+    let mut builder_fns = Vec::with_capacity(fields.len());
 
-    let mut builder_fn = Vec::with_capacity(fields_len);
-
-    for f in fields_iter {
-        let arg_name = f.ident.clone().unwrap();
+    for f in fields.iter() {
         let mut arg_ty = f.ty.clone();
+        let arg_name = f.ident.clone().unwrap();
         let fn_name = Ident::new(&format!("with_{}", arg_name.to_string().to_lowercase()), span.to_owned());
-        fields_idents.push(arg_name.clone());
-        // fields_types.push(ty.clone());
-        // fields_fn_name.push(fn_name);
+
         let mut builder_fn_body = quote! {
             self.inner.#arg_name = #arg_name.into()
         };
 
-        if let Type::Path(ref type_path) = arg_ty.clone() {
-
-
-            let Some(segment) = type_path.path.segments.last() else { continue; };
-            // let seg_ident = segment.ident.to_string();
-            // if seg_ident == "String" {
-            //     arg_ty = parse_quote! { arg_ty.to_token_stream().to_string().replace("String", "impl Into<String>").into_token_stream() }
-            // }
-            match segment.ident.to_string().as_str() {
-                "String" => {
-                    arg_ty = parse_quote! { impl Into<String> };
-                }
-                "Option" => {
-                    if let syn::PathArguments::AngleBracketed(args) = &segment.arguments {
-                        if let Some(arg) = args.args.first() {
-                            if let syn::GenericArgument::Type(inner_type) = arg {
-                                // let s = inner_type.to_token_stream().to_string();
-                                // panic!("{s}");
+        match arg_ty.clone() {
+            Type::Path(ref type_path) => {
+                let Some(segment) = type_path.path.segments.last() else { continue; };
+                match segment.ident.to_string().as_str() {
+                    "String" => {
+                        arg_ty = parse_quote! { impl Into<String> };
+                    }
+                    "Option" => {
+                        if let syn::PathArguments::AngleBracketed(generic_args) = &segment.arguments
+                            && let Some(arg) = generic_args.args.first()
+                            && let syn::GenericArgument::Type(inner_type) = arg {
                                 arg_ty = match arg.to_token_stream().to_string().as_str() {
                                     "String" => parse_quote!{ impl Into<String> },
                                     _ => parse_quote!{ #inner_type },
@@ -60,51 +46,20 @@ pub fn with_builder(item: TokenStream) -> TokenStream {
                                     self.inner.#arg_name = Some(#arg_name.into())
                                 }
                             }
-                            else if arg.to_token_stream().to_string() == "String" {
-                                arg_ty = parse_quote! { impl Into<String> };
-                                builder_fn_body = quote! {
-                                    self.inner.#arg_name = Some(String::from(#arg_name.into()))
-                                }
-                            }
-                        }
-                    }
-                    // let syn::PathArguments::AngleBracketed(args) = &segment.arguments else { continue; };
-                    // let Some(arg) = args.args.first() else { continue; };
-                    
-                    // if let syn::GenericArgument::Type(inner_type) = arg {
-                    //     // let s = inner_type.to_token_stream().to_string();
-                    //     // panic!("{s}");
-                    //     arg_ty = parse_quote! { #inner_type };
-                    //     builder_fn_body = quote! {
-                    //         self.inner.#arg_name = Some(#arg_name)
-                    //     }
-                    // }
-                    
-                    // else if arg.to_token_stream().to_string() == "String" {
-                    //     arg_ty = parse_quote! { impl Into<String> };
-                    //     builder_fn_body = quote! {
-                    //         self.inner.#arg_name = Some(String::from(#arg_name.into()))
-                    //     }
-                    // }
-                        // while let Some(arg) = args.args.next() {
-                        //     let disp_arg = arg.to_token_stream().to_string();
-                        // }
-                        // if let Some(arg) = args.args.first() {
-                            
-                        //     ty = parse_quote! {  }
-                        // }
-                    // }
-                },
-                _ => ()
-            }
-
+                    },
+                    _ => ()
+                }
+            },
+            _ => ()
         }
 
-        builder_fn.push(quote! {
+        
+        builder_fns.push(quote! {
             pub fn #fn_name (mut self, #arg_name: #arg_ty) -> #builder_name {
                 #builder_fn_body; self
             }
         });
+        field_idents.push(arg_name);
     }
 
     let stream = quote! {
@@ -122,16 +77,13 @@ pub fn with_builder(item: TokenStream) -> TokenStream {
         impl #builder_name {
             fn new() -> #builder_name {
                 let inner = #name {
-                    #(#fields_idents: Default::default()),*
+                    #(#field_idents: Default::default()),*
                 };
                 #builder_name { inner }
             }
 
             #(
-                // pub fn #fields_fn_name (mut self, #fields_idents: #fields_arg_types) -> #builder_name {
-                //     self.inner.#fields_idents = #fields_idents.into(); self
-                // }
-                #builder_fn
+                #builder_fns
             )*
         }
 
