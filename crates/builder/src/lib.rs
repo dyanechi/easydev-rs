@@ -1,3 +1,4 @@
+#![feature(let_chains)]
 #![feature(decl_macro)]
 use quote::*;
 use proc_macro::TokenStream;

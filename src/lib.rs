@@ -46,7 +46,7 @@ pub mod builder {
     
         #[derive(WithBuilder, Debug, Default)]
         struct Tester {
-            name: String,
+            name: Option<String>,
             age: usize,
             ancestor: Option<Box<Tester>>,
             some: Option<TestOpt>
@@ -57,12 +57,18 @@ pub mod builder {
             let name = "tester";
             let age = 72;
             let t = Tester::new()
-                .with_name(name)
+                .with_name(name.to_string())
                 .with_age(age)
-                .with_ancestor(Some(Box::new(Tester::default())))
-                .with_some(Some(TestOpt::new().with_id(721).build()))
+                .with_ancestor(Box::new(Tester::default()))
+                .with_some(TestOpt::new().with_id(721).build())
                 .build();
 
-            assert_eq!(format!("{}{}", t.name, t.age ), format!("{name}{age}"), "should work properly");
+            assert_eq!(t.name.unwrap(), name, "should work properly");
+            assert_eq!(t.age, age, "should work properly");
+            
+            assert!(t.ancestor.is_some(), "should work properly");
+
+            assert!(t.some.is_some(), "should work properly");
+            assert_eq!(t.some.unwrap().id, 721);
         }
     }
