@@ -1,5 +1,5 @@
 use proc_macro2::Ident;
-use syn::spanned::Spanned;
+use syn::{spanned::Spanned, token::Enum};
 
 use super::*;
 
