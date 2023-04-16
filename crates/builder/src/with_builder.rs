@@ -25,18 +25,37 @@ pub fn with_builder(item: TokenStream) -> TokenStream {
 
     for f in fields_iter {
         let ident = f.ident.clone().unwrap();
-        let ty = f.ty.clone();
+        let mut ty = f.ty.clone();
         let fn_name = Ident::new(&format!("with_{}", ident.to_string().to_lowercase()), span.to_owned());
         fields_idents.push(ident);
         fields_types.push(ty.clone());
         fields_fn_name.push(fn_name);
 
-        if let Type::Path(type_path) = &ty {
-            if type_path.path.is_ident("String") {
-                let arg_type = parse_quote! { impl Into<String> };
-                fields_arg_types.push(arg_type);
-                continue;
-            } 
+        if let Type::Path(type_path) = &ty.clone() {
+            // if type_path.path.segments[0].ident.to_string() == "Option" {
+            //     // ty = parse_quote! { String };
+            //     if let Some(inner_type) = type_path.path.segments.last().and_then(|seg| {
+            //         if let syn::PathArguments::AngleBracketed(args) = &seg.arguments {
+            //             args.args.first().and_then(|arg| {
+            //                 if let syn::GenericArgument::Type(inner_type) = arg {
+            //                     Some(inner_type)
+            //                 } else {
+            //                     None
+            //                 }
+            //             })
+            //         } else {
+            //             None
+            //         }
+            //     }) {
+            //         ty = parse_quote! { #inner_type };
+            //     }
+            // }
+            if let Some(segment) = type_path.path.segments.last() {
+                match segment.ident.to_string().as_str() {
+                    "String" => ty = parse_quote! { impl Into<String> },
+                    _ => ()
+                }
+            }
         }
         fields_arg_types.push(ty);
     }
@@ -47,6 +66,7 @@ pub fn with_builder(item: TokenStream) -> TokenStream {
                 #builder_name ::new()
             }
         }
+        impl BuildAble for #name {}
 
         #vis struct #builder_name {
             inner: #name
@@ -60,15 +80,17 @@ pub fn with_builder(item: TokenStream) -> TokenStream {
                 #builder_name { inner }
             }
 
-            pub fn build(self) -> #name {
-                self.inner
-            }
-
             #(
                 pub fn #fields_fn_name (mut self, #fields_idents: #fields_arg_types) -> #builder_name {
                     self.inner.#fields_idents = #fields_idents.into(); self
                 }
             )*
+        }
+
+        impl WithBuilder<#name> for #builder_name {
+            fn build(self) -> #name {
+                self.inner
+            }
         }
     };
 
