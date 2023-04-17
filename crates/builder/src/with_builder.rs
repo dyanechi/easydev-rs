@@ -1,94 +1,84 @@
-use proc_macro2::Ident;
-use syn::{spanned::Spanned, token::Enum};
+use proc_macro2::{Ident, Span};
+use syn::{spanned::Spanned, parse_macro_input, Token};
 
 use super::*;
 
 pub fn with_builder(item: TokenStream) -> TokenStream {
-    let ast = parse_macro_input!(item as DeriveInput);
-    let vis = &ast.vis;
-    let name  = &ast.ident;
-    let span = ast.span().clone();
-    let builder_name = Ident::new(&(name.to_string() + "Builder"), ast.span().to_owned());
+    let DeriveInput {
+        vis,
+        ident: struct_name,
+        data,
+        generics,
+        attrs,
+    } = parse_macro_input!(item as DeriveInput);
 
-    let fields = match ast.data {
-        syn::Data::Struct(st) => st.fields,
-        _ => panic!("WithBuilder supports only structs")
-    };
+    let span = Span::call_site();
+    let builder_name = Ident::new(&(struct_name.to_string() + "Builder"), span); 
+
+    let syn::Data::Struct(syn::DataStruct { fields, ..}) = data else { panic!("WithBuilder supports only structs") };
 
     let mut field_idents = Vec::with_capacity(fields.len());
     let mut builder_fns = Vec::with_capacity(fields.len());
 
-    for f in fields.iter() {
-        let mut arg_ty = f.ty.clone();
-        let arg_name = f.ident.clone().unwrap();
-        let fn_name = Ident::new(&format!("with_{}", arg_name.to_string().to_lowercase()), span.to_owned());
+    for field in fields.iter() {
+        let mut arg_ty = field.ty.to_owned();
+        let arg_name = field.ident.to_owned().unwrap();
+        let fn_name = Ident::new(&format!("with_{}", arg_name.to_string()), span);
 
-        let mut builder_fn_body = quote! {
-            self.inner.#arg_name = #arg_name.into()
-        };
+        let mut fn_val_assign = quote! { #arg_name.into() };
 
-        match arg_ty.clone() {
-            Type::Path(ref type_path) => {
-                let Some(segment) = type_path.path.segments.last() else { continue; };
-                match segment.ident.to_string().as_str() {
-                    "String" => {
-                        arg_ty = parse_quote! { impl Into<String> };
-                    }
-                    "Option" => {
-                        if let syn::PathArguments::AngleBracketed(generic_args) = &segment.arguments
-                            && let Some(arg) = generic_args.args.first()
-                            && let syn::GenericArgument::Type(inner_type) = arg {
-                                arg_ty = match arg.to_token_stream().to_string().as_str() {
-                                    "String" => parse_quote!{ impl Into<String> },
-                                    _ => parse_quote!{ #inner_type },
-                                };
-                                builder_fn_body = quote! {
-                                    self.inner.#arg_name = Some(#arg_name.into())
-                                }
-                            }
-                    },
-                    _ => ()
-                }
-            },
-            _ => ()
+        if let Type::Path(ref type_path) = arg_ty.clone()
+        && let Some(segment) = type_path.path.segments.last() {
+            let seg_ident = segment.ident.to_string();
+            if seg_ident == "String" {
+                arg_ty = parse_quote! { impl Into<String> };
+            }
+
+            if seg_ident == "Option" 
+            && let syn::PathArguments::AngleBracketed(generics) = &segment.arguments
+            && let Some(generic_arg) = generics.args.first()
+            && let syn::GenericArgument::Type(inner_type) = generic_arg {
+                arg_ty = match generic_arg.to_token_stream().to_string().as_str() {
+                    "String" => parse_quote!{ impl Into<String> },
+                    _ => parse_quote!{ #inner_type },
+                };
+                fn_val_assign = quote! { Some(#arg_name.into()) }
+            }
         }
 
-        
         builder_fns.push(quote! {
             pub fn #fn_name (mut self, #arg_name: #arg_ty) -> #builder_name {
-                #builder_fn_body; self
+                self.inner.#arg_name = #fn_val_assign; self
             }
         });
         field_idents.push(arg_name);
     }
 
     let stream = quote! {
-        impl #name {
+        impl #struct_name {
             pub fn new() -> #builder_name {
                 #builder_name ::new()
             }
         }
-        impl BuildAble for #name {}
+        impl BuildAble for #struct_name {}
 
         #vis struct #builder_name {
-            inner: #name
+            inner: #struct_name
         }
 
         impl #builder_name {
             fn new() -> #builder_name {
-                let inner = #name {
+                let inner = #struct_name {
                     #(#field_idents: Default::default()),*
                 };
                 #builder_name { inner }
             }
 
-            #(
-                #builder_fns
-            )*
+            #( #builder_fns )*
         }
 
-        impl WithBuilder<#name> for #builder_name {
-            fn build(self) -> #name {
+        impl WithBuilder<#struct_name> for #builder_name {
+            fn build(self) -> #struct_name {
                 self.inner
             }
         }
