@@ -1,5 +1,5 @@
 use proc_macro2::{Ident, Span};
-use syn::{spanned::Spanned, parse_macro_input, Token};
+use syn::parse_macro_input;
 
 use super::*;
 
@@ -8,8 +8,7 @@ pub fn with_builder(item: TokenStream) -> TokenStream {
         vis,
         ident: struct_name,
         data,
-        generics,
-        attrs,
+        ..
     } = parse_macro_input!(item as DeriveInput);
 
     let span = Span::call_site();
